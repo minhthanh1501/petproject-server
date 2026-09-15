@@ -6,14 +6,14 @@ import { PricingPlan } from '../../pricing-plans/entities/pricing-plan.entity.js
 import { Invoice } from '../../invoices/entities/invoice.entity.js';
 import { BoothRequest } from '../../booth-requests/entities/booth-request.entity.js';
 
-export enum StudySessionStatus {
+export enum BoothSessionStatus {
   CHECKED_IN = 'checked_in',
   CHECKED_OUT = 'checked_out',
   CANCELLED = 'cancelled',
 }
 
-@Entity('study_sessions')
-export class StudySession {
+@Entity('booth_sessions')
+export class BoothSession {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: string;
 
@@ -32,22 +32,22 @@ export class StudySession {
   @Column({ name: 'check_in_time', type: 'timestamp' })
   checkInTime: Date;
 
-  @Column({ type: 'enum', enum: StudySessionStatus, default: StudySessionStatus.CHECKED_IN })
-  status: StudySessionStatus;
+  @Column({ type: 'enum', enum: BoothSessionStatus, default: BoothSessionStatus.CHECKED_IN })
+  status: BoothSessionStatus;
 
-  @ManyToOne(() => User, (user) => user.studySessions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.boothSessions, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => Booth, (booth) => booth.studySessions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Booth, (booth) => booth.boothSessions, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'booth_id' })
   booth: Booth;
 
-  @OneToOne(() => Booking, (booking) => booking.studySession, { onDelete: 'CASCADE' })
+  @OneToOne(() => Booking, (booking) => booking.boothSession, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'booking_id' })
   booking: Booking;
 
-  @ManyToOne(() => PricingPlan, (plan) => plan.studySessions, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => PricingPlan, (plan) => plan.boothSessions, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'pricing_plan_id' })
   pricingPlan: PricingPlan;
 

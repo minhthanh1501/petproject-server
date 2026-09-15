@@ -2,7 +2,7 @@ import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToOne, Prim
 import { User } from '../../users/entities/user.entity.js';
 import { Booth } from '../../booths/entities/booth.entity.js';
 import { PricingPlan } from '../../pricing-plans/entities/pricing-plan.entity.js';
-import { StudySession } from '../../study-sessions/entities/study-session.entity.js';
+import { BoothSession } from '../../booth-sessions/entities/booth-session.entity.js';
 
 export enum BookingStatus {
   PENDING = 'pending',
@@ -49,6 +49,6 @@ export class Booking {
   @JoinColumn({ name: 'pricing_plan_id' })
   pricingPlan: PricingPlan;
 
-  @OneToOne(() => StudySession, (session) => session.booking)
-  studySession: StudySession;
+  @OneToOne(() => BoothSession, (session) => session.booking)
+  boothSession: BoothSession;
 }

@@ -1,6 +1,6 @@
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Booking } from '../../bookings/entities/booking.entity.js';
-import { StudySession } from '../../study-sessions/entities/study-session.entity.js';
+import { BoothSession } from '../../booth-sessions/entities/booth-session.entity.js';
 
 export enum PricingUnit {
   HOUR = 'hour',
@@ -25,6 +25,6 @@ export class PricingPlan {
   @OneToMany(() => Booking, (booking) => booking.pricingPlan)
   bookings: Booking[];
 
-  @OneToMany(() => StudySession, (session) => session.pricingPlan)
-  studySessions: StudySession[];
+  @OneToMany(() => BoothSession, (session) => session.pricingPlan)
+  boothSessions: BoothSession[];
 }

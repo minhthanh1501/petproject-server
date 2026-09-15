@@ -1,5 +1,5 @@
 import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { StudySession } from '../../study-sessions/entities/study-session.entity.js';
+import { BoothSession } from '../../booth-sessions/entities/booth-session.entity.js';
 import { Booth } from '../../booths/entities/booth.entity.js';
 
 export enum BoothRequestType {
@@ -36,9 +36,9 @@ export class BoothRequest {
   @CreateDateColumn({ name: 'requested_at' })
   requestedAt: Date;
 
-  @ManyToOne(() => StudySession, (session) => session.boothRequests, { onDelete: 'CASCADE' })
+  @ManyToOne(() => BoothSession, (session) => session.boothRequests, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'session_id' })
-  session: StudySession;
+  session: BoothSession;
 
   @ManyToOne(() => Booth, (booth) => booth.boothRequests, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'booth_id' })

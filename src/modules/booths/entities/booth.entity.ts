@@ -1,7 +1,7 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { Area } from '../../areas/entities/area.entity.js';
 import { Booking } from '../../bookings/entities/booking.entity.js';
-import { StudySession } from '../../study-sessions/entities/study-session.entity.js';
+import { BoothSession } from '../../booth-sessions/entities/booth-session.entity.js';
 import { BoothRequest } from '../../booth-requests/entities/booth-request.entity.js';
 
 export enum BoothType {
@@ -40,8 +40,8 @@ export class Booth {
   @OneToMany(() => Booking, (booking) => booking.booth)
   bookings: Booking[];
 
-  @OneToMany(() => StudySession, (session) => session.booth)
-  studySessions: StudySession[];
+  @OneToMany(() => BoothSession, (session) => session.booth)
+  boothSessions: BoothSession[];
 
   @OneToMany(() => BoothRequest, (request) => request.booth)
   boothRequests: BoothRequest[];

@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { User } from '../../users/entities/user.entity.js';
-import { StudySession } from '../../study-sessions/entities/study-session.entity.js';
+import { BoothSession } from '../../booth-sessions/entities/booth-session.entity.js';
 import { OrderItem } from '../../order-items/entities/order-item.entity.js';
 
 export enum PaymentStatus {
@@ -31,9 +31,9 @@ export class Invoice {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @OneToOne(() => StudySession, (session) => session.invoice, { onDelete: 'CASCADE' })
+  @OneToOne(() => BoothSession, (session) => session.invoice, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'session_id' })
-  session: StudySession;
+  session: BoothSession;
 
   @OneToMany(() => OrderItem, (item) => item.invoice)
   orderItems: OrderItem[];

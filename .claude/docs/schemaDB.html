@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Study Booth Coffee - Database ERD với Phân Quyền RBAC</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .diagram-container {
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 95%;
+            max-width: 1400px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sơ đồ CSDL Cập nhật Phân quyền (RBAC) - Study Booth Coffee</h1>
+    <p>Tích hợp hệ thống vai trò (Roles) và ma trận phân quyền (Permissions) theo từng chi nhánh</p>
+    <div class="diagram-container">
+        <pre class="mermaid">
+erDiagram
+    USERS ||--o{ USER_ROLES : "assigned"
+    ROLES ||--o{ USER_ROLES : "belongs_to"
+    ROLES ||--o{ ROLE_PERMISSIONS : "has"
+    PERMISSIONS ||--o{ ROLE_PERMISSIONS : "granted_in"
+
+    USERS ||--o{ BOOKINGS : "places"
+    USERS ||--o{ STUDY_SESSIONS : "attends"
+    USERS ||--o{ INVOICES : "pays"
+    
+    BRANCHES ||--|{ AREAS : "contains"
+    BRANCHES ||--o{ USER_ROLES : "manages_at"
+    AREAS ||--|{ BOOTHS : "houses"
+    
+    BOOTHS ||--o{ BOOKINGS : "reserved_in"
+    BOOTHS ||--o{ STUDY_SESSIONS : "hosts"
+    BOOTHS ||--o{ BOOTH_REQUESTS : "receives"
+    
+    PRICING_PLANS ||--o{ BOOKINGS : "applies_to"
+    PRICING_PLANS ||--o{ STUDY_SESSIONS : "applies_to"
+    
+    BOOKINGS ||--o| STUDY_SESSIONS : "turns_into"
+    STUDY_SESSIONS ||--o| INVOICES : "generates"
+    STUDY_SESSIONS ||--o{ BOOTH_REQUESTS : "triggers"
+    
+    CATEGORIES ||--|{ MENU_ITEMS : "groups"
+    MENU_ITEMS ||--o{ ORDER_ITEMS : "included_in"
+    INVOICES ||--|{ ORDER_ITEMS : "contains"
+
+    USERS {
+        bigint id PK
+        string full_name
+        string email
+        string phone
+        int reward_points
+    }
+
+    ROLES {
+        int id PK
+        string code
+        string name
+    }
+
+    PERMISSIONS {
+        int id PK
+        string code
+        string module
+    }
+
+    USER_ROLES {
+        bigint user_id PK,FK
+        int role_id PK,FK
+        int branch_id FK
+    }
+
+    ROLE_PERMISSIONS {
+        int role_id PK,FK
+        int permission_id PK,FK
+    }
+
+    BOOTHS {
+        int id PK
+        int area_id FK
+        string code
+        string type
+        string status
+    }
+
+    STUDY_SESSIONS {
+        bigint id PK
+        bigint user_id FK
+        int booth_id FK
+        timestamp check_in_time
+        string status
+    }
+
+    INVOICES {
+        bigint id PK
+        bigint session_id FK
+        decimal total_amount
+        string payment_status
+    }
+
+        </pre>
+    </div>
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    </script>
+</body>
+</html>

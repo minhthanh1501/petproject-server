@@ -1,39 +1,38 @@
 import { Module } from '@nestjs/common';
-import { createObserveModule } from '@nestjs/observe';
+import { CacheModule } from '@nestjs/cache-manager';
+import { ConfigModule, type ConfigType } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { createKeyv } from '@keyv/redis';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
-import { UsersModule } from './users/users.module.js';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-
-export const { ObserveModule, ObserveInstrument } = createObserveModule();
+import { UsersModule } from './modules/users/users.module.js';
+import { ALL_CONFIG_NAMESPACES, databaseConfig, redisConfig, validateEnv } from './config/index.js';
+import { buildDataSourceOptions } from './database/data-source-options.js';
+import { CACHE } from './constants/cache.constants.js';
 
 @Module({
   imports: [
-    // Distributed tracing, auto-correlated logs, request/job metrics, error
-    // telemetry, alarms, and more — out of the box. Sign up at https://observe.nestjs.com
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      load: ALL_CONFIG_NAMESPACES,
+      validate: validateEnv,
+      cache: true,
     }),
-    TypeOrmModule.forRootAsync({
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        host: configService.get<string>('DB_HOST'),
-        port: configService.get<number>('DB_PORT'),
-        username: configService.get<string>('DB_USERNAME'),
-        password: configService.get<string>('DB_PASSWORD'),
-        database: configService.get<string>('DB_DATABASE'),
-        autoLoadEntities: true,
-        synchronize: true, // development only
+    CacheModule.registerAsync({
+      isGlobal: true,
+      inject: [redisConfig.KEY],
+      useFactory: (redis: ConfigType<typeof redisConfig>) => ({
+        cacheId: CACHE.CACHE_ID,
+        ttl: redis.defaultTtl,
+        stores: [createKeyv(redis.url, { namespace: redis.namespace })],
       }),
     }),
-    // ObserveModule.forRoot({
-    //   appKey: 'YOUR_APP_KEY',
-    //   appSecret: 'YOUR_APP_SECRET',
-    //   serviceId: 'server',
-    // }),
+    TypeOrmModule.forRootAsync({
+      inject: [databaseConfig.KEY],
+      useFactory: (database: ConfigType<typeof databaseConfig>) =>
+        buildDataSourceOptions(database),
+    }),
     UsersModule,
   ],
   controllers: [AppController],

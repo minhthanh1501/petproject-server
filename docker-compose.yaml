@@ -12,5 +12,25 @@ services:
     volumes:
       - pgdata_18:/var/lib/postgresql
 
+  redis:
+    image: redis:8-alpine
+    container_name: redis_container
+    restart: always
+    # appendonly keeps the cache warm across restarts; maxmemory-policy is what
+    # actually bounds memory (cache-manager v7 has no app-level `max`).
+    # requirepass is what actually enables auth - without it Redis accepts
+    # unauthenticated connections regardless of anything else in this file.
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata_8:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
 volumes:
   pgdata_18:
+  redisdata_8:

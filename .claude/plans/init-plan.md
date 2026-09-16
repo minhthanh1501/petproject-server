@@ -87,7 +87,9 @@ Checked against the installed packages, not assumed. Unaffected by the business 
 | Node 24 type-stripping cannot parse decorators; `ts-node` absent; esbuild/`tsx` lack `emitDecoratorMetadata` | Migration CLI runs against compiled `dist/`. |
 | Vitest 4 → Vite 8 → **oxc/rolldown** (not esbuild) | `emitDecoratorMetadata` **is** honoured — verified by running the transform. **No `unplugin-swc` needed.** |
 | `@nestjs/config` 12 dropped Joi `validationSchema` | Env validation uses a `validate()` function with class-validator. |
-| `class-validator`/`class-transformer` are CJS with no `exports` map | Named imports should work via Node's CJS named-export detection — smoke-test one DTO right after install. |
+| `class-validator`/`class-transformer` are CJS with no `exports` map | ✅ **Verified by execution.** Named imports work via Node's CJS named-export detection — no default-import destructure needed. `bcryptjs` does need a default import. |
+| **Circular entity imports are fatal under ESM.** `emitDecoratorMetadata` emits `__metadata("design:type", Invoice)`, which *evaluates* the class at definition time — and two entities that reference each other are a TDZ cycle: `ReferenceError: Cannot access 'Invoice' before initialization`. | ✅ **Hit and fixed.** Every relation property is typed `Relation<T>` (TypeORM's `export type Relation<T> = T`), which makes TS emit `Object` for `design:type` and breaks the cycle. The `() => Entity` lambda is lazy and was never the problem. Applied to all 58 relation properties, not just the cyclic ones — a uniform rule survives the next entity someone adds. |
+| **A nullable column needs an explicit `type`.** `foo: string \| null` is a union, so `design:type` emits `Object` and TypeORM throws `DataTypeNotSupportedError: Data type "Object"`. | ✅ **Hit and fixed.** Every nullable column carries `type: 'varchar' \| 'int' \| ...` explicitly. Same root cause bites class-validator env DTOs: a property written `PORT = 3000` with no annotation emits `Object`, so `enableImplicitConversion` silently fails to coerce and a valid `.env` is rejected. Always annotate. |
 
 ---
 
@@ -862,8 +864,16 @@ Membership revenue is recognised **at purchase**, not as minutes are consumed �
 | 0 | **Foundation** | Install/remove deps; enable the Swagger CLI plugin; `git add` the `src/modules/**` move; smoke-test a `class-validator` import under ESM; fix [app.module.ts:5](src/app.module.ts#L5); `synchronize: false` | app boots |
 | 1 | **Constants & enums** | `src/constants/**` (app, env, route, swagger, pagination, validation, regex, auth, rbac, database, business, billing, cron, messages); extract and extend the enums into `src/common/enums/**` | compiles |
 | 2 | **Common layer** | `BaseRepository`, `TransactionRunner`, `@Global() DatabaseModule`, pagination + param DTOs, validation factory, base entities, money/time/**business-day** helpers, `src/config/**` + env validation + corrected `.env.example` | unit-testable |
-| 3 | **Schema & migrations** | M1 base timestamps → M2 `timestamptz` (with `USING`) → M3 money → bigint VND → M4 per-entity columns (incl. `business_date`, booth `CLEANING`, zone types) → M5 new tables (`payments`, `session_extensions`, `invoice_counters`, `branch_capacity_snapshots`) → M6 nullability (`booth_sessions.user_id`/`booking_id`, `invoices.session_id`, `users.email`, `booth_requests.session_id`) → M7 indexes & checks → M8 seed data | up/down round-trip on a scratch DB |
+| 3 | **Schema & migrations** | Bring all 25 entities to the target schema, then generate **one `InitialSchema`** — see below | up/down round-trip on a scratch DB |
 | 4 | **GATE** | `pnpm build && pnpm migration:show`, then generate and **hand-inspect** `InitialSchema` before running | CLI proven |
+
+> **The M1→M8 incremental migration sequence this plan previously described is dead weight, and phase 3 above replaces it with a single `InitialSchema`.** That sequence was written as if migrating a populated database. There is no database: `autoLoadEntities` was set but zero `forFeature()` calls existed, so `synchronize` never created a table. On a greenfield schema there is nothing to alter, so `ALTER TABLE ... USING col AT TIME ZONE` has no rows to convert and the ordering between the eight steps carries no information. One migration generated from the final entities is smaller, reviewable in a single diff, and reversible in one step.
+>
+> Two things still cannot come from `migration:generate` and must be **hand-written into that migration**, because TypeORM has no decorator for either:
+> - `CREATE EXTENSION btree_gist` + the `bookings_no_overlap` GiST exclusion constraint (bookings phase).
+> - The functional partial uniques `users (lower(email))` and `users (phone)` — `@Index` cannot express `lower(...)`.
+>
+> Everything else — including all five partial unique indexes on `booth_sessions` — is already in the entity metadata and generates on its own (verified).
 | 5 | **Auth & RBAC** | Decorators, `AuthModule` (password/token/permission-registry services, `RefreshToken`), both `APP_GUARD`s, `SessionTokenGuard`, seeds | one guarded route + one token-scoped route work |
 | 6 | **Reference data** | branches → areas (zones) → booths → categories → menu-items → pricing-plans. **Booths is the reference implementation** of the 3-layer slice | an owner sets up a branch end-to-end |
 | 7 | **Availability board** | `GET /branches/:id/availability` + `GET /booths/board` (flow a) | the door screen works and is fast |
